@@ -15,6 +15,7 @@ const SUBJECT_OPTIONS: { id: Subject; label: string; emoji: string; langs: Langu
   { id: 'social-studies', label: 'Social Studies', emoji: '🌎', langs: ['english'] },
   { id: 'tag-prep', label: 'TAG Prep', emoji: '🧠', langs: ['english'] },
   { id: 'motivation', label: 'Mindset & Me', emoji: '💪', langs: ['english'] },
+  { id: 'vocabulary', label: 'Vocabulary', emoji: '🔤', langs: ['english'] },
 ]
 
 export default function Settings() {

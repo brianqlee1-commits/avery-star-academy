@@ -7,6 +7,44 @@ export type Subject =
   | 'social-studies'
   | 'tag-prep'
   | 'motivation'
+  | 'vocabulary'
+
+export type QuizMode = 'lesson' | 'quiz'
+
+// A worked example shown during the Demonstrate phase
+export interface WorkedExample {
+  visual?: string
+  prompt: string
+  answer: string
+  explanation: string
+}
+
+// A guided practice question (simpler, hints enabled, 2 attempts)
+export interface PracticeStep {
+  visual?: string
+  prompt: string
+  options: string[]
+  answer: string
+  hint: string
+  explanation: string
+}
+
+// A full lesson: Demonstrate → Practice → Quiz
+export interface Lesson {
+  id: string
+  subject: Subject
+  level: GradeLevel
+  language: Language
+  topic: string
+  title: string
+  visual: string            // big emoji for the concept
+  tagline: string           // one-line hook shown on card
+  explanation: string       // the "teach" text (2-4 sentences, kid-friendly)
+  keyPoints: string[]       // 2-3 bullet points
+  examples: WorkedExample[] // 2 worked examples shown step-by-step
+  practiceSteps: PracticeStep[] // 3 guided questions
+  quizTopics: string[]      // topic tags to pull quiz questions from main bank
+}
 
 export type GradeLevel = 'K' | '1' | '2' | '3' | 'TAG'
 

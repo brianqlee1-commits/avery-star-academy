@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
-import type { Subject, Language, GradeLevel } from '../types'
+import type { Subject, Language, GradeLevel, QuizMode } from '../types'
 import { loadSettings } from '../store'
 
 interface SubjectConfig {
@@ -17,6 +17,7 @@ interface SubjectConfig {
 const SUBJECTS: SubjectConfig[] = [
   { id: 'reading', label: 'Reading', emoji: '📚', color: 'from-blue-400 to-indigo-500', border: 'border-blue-600', english: true, spanish: true },
   { id: 'math', label: 'Math', emoji: '🔢', color: 'from-green-400 to-teal-500', border: 'border-green-600', english: true, spanish: true },
+  { id: 'vocabulary', label: 'Vocabulary', emoji: '🔤', color: 'from-cyan-400 to-blue-500', border: 'border-cyan-600', english: true, spanish: false },
   { id: 'science', label: 'Science', emoji: '🔬', color: 'from-yellow-400 to-orange-500', border: 'border-yellow-600', english: true, spanish: false },
   { id: 'social-studies', label: 'Social Studies', emoji: '🌎', color: 'from-pink-400 to-rose-500', border: 'border-pink-600', english: true, spanish: false },
   { id: 'tag-prep', label: 'TAG Prep', emoji: '🧠', color: 'from-purple-500 to-violet-600', border: 'border-purple-700', english: true, spanish: false },
@@ -34,31 +35,31 @@ const LEVELS: { id: GradeLevel; label: string; emoji: string }[] = [
 export default function ChooseSubject() {
   const navigate = useNavigate()
   const settings = loadSettings()
-  const [step, setStep] = useState<'lang' | 'subject' | 'level'>('lang')
+  const [step, setStep] = useState<'lang' | 'subject' | 'level' | 'mode'>('lang')
   const [lang, setLang] = useState<Language>('english')
   const [subject, setSubject] = useState<Subject | null>(null)
+  const [level, setLevel] = useState<GradeLevel | null>(null)
 
   const focusSubjects = settings.dailyFocus.enabled ? settings.dailyFocus.subjects : []
 
-  function handleSubject(s: Subject) {
-    setSubject(s)
-    setStep('level')
+  function handleBack() {
+    if (step === 'lang') navigate('/')
+    else if (step === 'subject') setStep('lang')
+    else if (step === 'level') setStep('subject')
+    else setStep('level')
   }
 
-  function handleLevel(level: GradeLevel) {
-    navigate(`/quiz/${lang}/${subject}/${level}`)
+  function handleSubject(s: Subject) { setSubject(s); setStep('level') }
+  function handleLevel(lv: GradeLevel) { setLevel(lv); setStep('mode') }
+  function handleMode(mode: QuizMode) {
+    if (mode === 'lesson') navigate(`/lesson/${lang}/${subject}/${level}`)
+    else navigate(`/quiz/${lang}/${subject}/${level}`)
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-yellow-50 flex flex-col items-center px-4 py-6">
       <div className="w-full max-w-lg">
-        {/* Back */}
-        <button
-          onClick={() => step === 'lang' ? navigate('/') : step === 'subject' ? setStep('lang') : setStep('subject')}
-          className="mb-5 flex items-center gap-2 text-purple-600 font-bold text-lg"
-        >
-          ← Back
-        </button>
+        <button onClick={handleBack} className="mb-5 flex items-center gap-2 text-purple-600 font-bold text-lg">← Back</button>
 
         {/* Step: Language */}
         {step === 'lang' && (
@@ -135,6 +136,48 @@ export default function ChooseSubject() {
                   </div>
                 </motion.button>
               ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step: Mode */}
+        {step === 'mode' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <h2 className="text-3xl font-black text-purple-700 text-center mb-2">How do you want to learn?</h2>
+            <p className="text-center text-purple-400 font-bold mb-6 text-sm">Pick your adventure!</p>
+            <div className="flex flex-col gap-4">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleMode('lesson')}
+                className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white rounded-3xl p-6 shadow-xl border-b-4 border-blue-700 text-left"
+              >
+                <div className="flex items-center gap-4">
+                  <span className="text-4xl">📖</span>
+                  <div>
+                    <div className="font-black text-2xl">Learn It!</div>
+                    <div className="text-blue-100 font-bold text-sm">See examples → Practice with help → Quiz yourself</div>
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  {['📖 Show', '🦉 Practice', '🚀 Quiz'].map((step, i) => (
+                    <div key={i} className="flex-1 bg-white/20 rounded-xl py-1 text-center text-xs font-black">{step}</div>
+                  ))}
+                </div>
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleMode('quiz')}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-3xl p-6 shadow-xl border-b-4 border-purple-700 text-left"
+              >
+                <div className="flex items-center gap-4">
+                  <span className="text-4xl">🚀</span>
+                  <div>
+                    <div className="font-black text-2xl">Quick Quiz!</div>
+                    <div className="text-pink-100 font-bold text-sm">Jump straight into questions — fast & fun!</div>
+                  </div>
+                </div>
+              </motion.button>
             </div>
           </motion.div>
         )}
