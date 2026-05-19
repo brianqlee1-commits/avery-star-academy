@@ -15,6 +15,7 @@ import { tagPrepQuestionsExtra } from './english/tagPrepQuestionsExtra'
 import { motivationQuestionsExtra } from './english/motivationQuestionsExtra'
 import { vocabularyQuestions } from './english/vocabulary'
 import { spanishReadingExtraQuestions } from './spanish/readingExtra'
+import { spanishMathExtraQuestions } from './spanish/mathExtra'
 
 export const ALL_QUESTIONS: Question[] = [
   ...readingQuestions,
@@ -33,6 +34,7 @@ export const ALL_QUESTIONS: Question[] = [
   ...spanishReadingQuestions,
   ...spanishReadingExtraQuestions,
   ...spanishMathQuestions,
+  ...spanishMathExtraQuestions,
 ]
 
 export function getQuestions(opts: {
