@@ -109,3 +109,19 @@ export interface Settings {
   playerName: string
   favoriteCharacter: string
 }
+
+export interface ScheduleBlock {
+  id: string
+  subject: Subject
+  topic: string
+  durationMinutes: number
+  lang: Language
+  mode: QuizMode
+  completed: boolean
+}
+
+export interface DaySchedule {
+  date: string
+  isDLD: boolean
+  blocks: ScheduleBlock[]
+}

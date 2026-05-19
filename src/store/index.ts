@@ -1,4 +1,4 @@
-import type { Progress, Settings, DailyFocus } from '../types'
+import type { Progress, Settings, DailyFocus, DaySchedule, ScheduleBlock } from '../types'
 
 const PROGRESS_KEY = 'asa_progress'
 const SETTINGS_KEY = 'asa_settings'
@@ -79,4 +79,35 @@ export function updateDailyFocus(focus: DailyFocus): void {
   const s = loadSettings()
   s.dailyFocus = focus
   saveSettings(s)
+}
+
+const SCHEDULE_KEY = 'asa_schedule'
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+export function loadSchedule(): DaySchedule {
+  try {
+    const raw = localStorage.getItem(SCHEDULE_KEY)
+    if (!raw) return { date: todayISO(), isDLD: false, blocks: [] }
+    const parsed: DaySchedule = JSON.parse(raw)
+    // Reset completed flags if schedule is from a previous day
+    if (parsed.date !== todayISO()) {
+      return { date: todayISO(), isDLD: false, blocks: [] }
+    }
+    return parsed
+  } catch {
+    return { date: todayISO(), isDLD: false, blocks: [] }
+  }
+}
+
+export function saveSchedule(s: DaySchedule): void {
+  localStorage.setItem(SCHEDULE_KEY, JSON.stringify({ ...s, date: todayISO() }))
+}
+
+export function markBlockComplete(blockId: string): void {
+  const s = loadSchedule()
+  const block = s.blocks.find((b: ScheduleBlock) => b.id === blockId)
+  if (block) { block.completed = true; saveSchedule(s) }
 }

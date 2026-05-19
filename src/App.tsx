@@ -5,6 +5,7 @@ import Quiz from './pages/Quiz'
 import LessonFlow from './pages/LessonFlow'
 import Rewards from './pages/Rewards'
 import Settings from './pages/Settings'
+import DayPlanner from './pages/DayPlanner'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/lesson/:lang/:subject/:level" element={<LessonFlow />} />
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/planner" element={<DayPlanner />} />
       </Routes>
     </BrowserRouter>
   )
