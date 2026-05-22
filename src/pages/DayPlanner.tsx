@@ -22,7 +22,7 @@ const SUBJECTS: { id: Subject; label: string; emoji: string; color: string; bg: 
   { id: 'science',       label: 'Science',        emoji: '🔬', color: 'from-yellow-500 to-orange-500', bg: 'bg-yellow-50 border-yellow-300' },
   { id: 'social-studies',label: 'Social Studies', emoji: '🌎', color: 'from-pink-500 to-rose-600',     bg: 'bg-pink-50 border-pink-300' },
   { id: 'tag-prep',      label: 'TAG Prep',       emoji: '🧠', color: 'from-purple-600 to-violet-700', bg: 'bg-purple-50 border-purple-300' },
-  { id: 'motivation',    label: 'Mindset & Me',   emoji: '💪', color: 'from-orange-500 to-red-500',    bg: 'bg-orange-50 border-orange-300' },
+  { id: 'motivation',    label: 'Emotions',        emoji: '💛', color: 'from-orange-500 to-red-500',    bg: 'bg-orange-50 border-orange-300' },
 ]
 
 const DURATIONS = [15, 20, 30, 45, 60]

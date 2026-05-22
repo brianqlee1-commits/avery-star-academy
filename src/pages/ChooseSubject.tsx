@@ -21,7 +21,7 @@ const SUBJECTS: SubjectConfig[] = [
   { id: 'science', label: 'Science', emoji: '🔬', color: 'from-yellow-400 to-orange-500', border: 'border-yellow-600', english: true, spanish: false },
   { id: 'social-studies', label: 'Social Studies', emoji: '🌎', color: 'from-pink-400 to-rose-500', border: 'border-pink-600', english: true, spanish: false },
   { id: 'tag-prep', label: 'TAG Prep', emoji: '🧠', color: 'from-purple-500 to-violet-600', border: 'border-purple-700', english: true, spanish: false },
-  { id: 'motivation', label: 'Mindset & Me', emoji: '💪', color: 'from-orange-400 to-red-500', border: 'border-orange-600', english: true, spanish: false },
+  { id: 'motivation', label: 'Emotions', emoji: '💛', color: 'from-orange-400 to-red-500', border: 'border-orange-600', english: true, spanish: false },
 ]
 
 const LEVELS: { id: GradeLevel; label: string; emoji: string }[] = [

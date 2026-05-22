@@ -392,6 +392,77 @@ export const LESSONS: Lesson[] = [
     quizTopics: ['matter', 'states of matter'],
   },
 
+  // ─── EMOTIONS ─────────────────────────────────────────────────────────────
+
+  {
+    id: 'les-emo-k-curiosity',
+    subject: 'motivation', level: 'K', language: 'english',
+    topic: 'curiosity', title: 'Curiosity is Your Superpower!', visual: '🔭',
+    tagline: 'Your questions can change the world!',
+    explanation: 'Did you know that every great scientist, inventor, and explorer had ONE thing in common? They asked TONS of questions! When you think "I wonder why..." or "How does that work?" — your brain is doing something amazing. Asking curious questions is how we discover new things. Your questions are never silly — they are POWERFUL!',
+    keyPoints: [
+      'Thinking "I wonder..." means your brain is growing! 🌱',
+      'Every big invention started with someone asking a curious question',
+      'There are NO silly questions — only questions waiting to be asked!',
+    ],
+    examples: [
+      { visual: '🍎', prompt: 'Isaac Newton saw an apple fall from a tree. He asked "WHY does it fall DOWN and not UP?" What did that curious question lead to?', answer: 'The discovery of GRAVITY — one of the most important ideas in all of science!', explanation: 'Newton\'s curious "WHY?" question changed science forever! YOUR curious questions could be just as amazing!' },
+      { visual: '🔬', prompt: 'Your teacher does a cool experiment where liquid turns colors. Your brain starts wondering "HOW did that happen?" What should you do with that feeling?', answer: 'Ask! Raise your hand and say: "I have a question — how did the colors change?"', explanation: 'That wondering feeling is your brain being curious! Your teacher WANTS you to ask — it shows you are thinking hard and paying attention!' },
+    ],
+    practiceSteps: [
+      { visual: '🌧️', prompt: 'Sofia notices it rains a lot in spring. She thinks "I wonder WHY it rains more in spring!" What is Sofia doing?', options: ['Being curious and asking a question!', 'Being silly', 'Breaking a rule', 'Not paying attention'], answer: 'Being curious and asking a question!', hint: 'Thinking "I wonder..." is the very first step of what amazing thing?', explanation: 'Sofia is being CURIOUS! That "I wonder" feeling is her brain wanting to learn more — and it\'s a sign of a great mind! 🌟' },
+      { visual: '❓', prompt: 'Which beginning makes the BEST curious question?', options: ['"I wonder why..." or "How does..."', '"Stop asking questions"', '"I already know everything"', '"Who cares?"'], answer: '"I wonder why..." or "How does..."', hint: 'Think about words that start a question about how things work...', explanation: 'Questions starting with WHY, HOW, WHAT IF, and I WONDER are amazing curious questions! They open up your mind to discover new things! 💡' },
+      { visual: '🦁', prompt: 'Your friend says "I don\'t ask questions because I\'m afraid to say something wrong." What would you tell them?', options: ['Questions are never about being wrong — they help us LEARN!', 'You\'re right, don\'t ask', 'Only smart kids ask questions', 'Questions are for babies'], answer: 'Questions are never about being wrong — they help us LEARN!', hint: 'Why do we ask questions — to be right, or to LEARN?', explanation: 'Questions are NEVER about being wrong! Every single question is a step toward learning something new. Asking is always the brave and smart choice! 🌟' },
+    ],
+    quizTopics: ['curiosity', 'asking questions'],
+  },
+
+  {
+    id: 'les-emo-k-brave-ask',
+    subject: 'motivation', level: 'K', language: 'english',
+    topic: 'asking questions', title: 'Brave Enough to Ask', visual: '🙋',
+    tagline: 'Every teacher loves a question!',
+    explanation: 'Sometimes asking a question feels scary, especially with a teacher you don\'t know yet. But here\'s a secret that EVERY teacher wants you to know: they LOVE when students ask questions! It makes teachers happy because it shows you are listening and thinking hard. Raising your hand is never a bother — it\'s exactly what teachers are there for!',
+    keyPoints: [
+      'Teachers feel HAPPY when students ask questions — it shows you\'re thinking!',
+      'Even brave people feel nervous sometimes — and they speak up anyway!',
+      'Magic words: "Excuse me, may I ask a question?" always work!',
+    ],
+    examples: [
+      { visual: '🏫', prompt: 'Avery is in a classroom with a substitute teacher she has never met before. She doesn\'t understand the directions. What is the brave thing to do?', answer: 'Raise her hand and say: "Excuse me, I have a question about the directions."', explanation: 'Even a teacher you\'ve never met WANTS to help you! That\'s their whole job. Raising your hand is always the right and brave choice!' },
+      { visual: '✋', prompt: 'What are the "magic words" to politely ask a teacher a question?', answer: 'Raise your hand, wait to be called on, then say: "Excuse me, I have a question" or "I don\'t understand — can you help me?"', explanation: 'These magic words are polite AND brave! Any teacher — new or familiar — will be happy you asked. You deserve to understand!' },
+    ],
+    practiceSteps: [
+      { visual: '📝', prompt: 'You are doing a worksheet and you don\'t understand what to do. The teacher is someone you just met today. What is the BEST thing to do?', options: ['Raise your hand and ask for help', 'Sit quietly and stay confused', 'Copy from someone else', 'Pretend you understand'], answer: 'Raise your hand and ask for help', hint: 'What do teachers WANT you to do when you\'re confused about something?', explanation: 'RAISE YOUR HAND! Asking for help is the smartest, bravest thing you can do. Your teacher is there for YOU — and they will be so glad you asked! 🌟' },
+      { visual: '✋', prompt: 'Which is the best way to get a teacher\'s attention when you have a question?', options: ['Raise your hand and wait to be called on', 'Shout the answer out loud', 'Tap the teacher on the shoulder over and over', 'Never ask and stay confused'], answer: 'Raise your hand and wait to be called on', hint: 'What shows respect AND gets you the help you need?', explanation: 'Raising your hand is perfect — it\'s respectful, patient, AND it gets you the help you deserve! You\'ve got this! ✋' },
+      { visual: '💭', prompt: 'Emma feels nervous to ask her new teacher a question. But she asks anyway. Emma is being...', options: ['BRAVE! She asked even though she was nervous!', 'Bad, she should have stayed quiet', 'Annoying to the teacher', 'Silly for not knowing the answer'], answer: 'BRAVE! She asked even though she was nervous!', hint: 'Being brave means doing something even when it feels a little scary. Did Emma do that?', explanation: 'Emma is SO brave! Bravery isn\'t about NOT feeling nervous — it\'s about asking the question ANYWAY. That\'s exactly what she did! 🦁✨' },
+    ],
+    quizTopics: ['asking questions', 'confidence', 'emotions'],
+  },
+
+  {
+    id: 'les-emo-1-wonder',
+    subject: 'motivation', level: '1', language: 'english',
+    topic: 'curiosity', title: 'The Power of "I Wonder..."', visual: '💫',
+    tagline: 'Three words that start every discovery!',
+    explanation: '"I wonder..." are three of the most powerful words in the world. Every time you say "I wonder why the sky is blue" or "I wonder how airplanes fly," you start a journey of discovery. Scientists call this being INQUISITIVE — it means you love learning and asking questions. People who wonder a lot tend to make the most amazing discoveries!',
+    keyPoints: [
+      '"I wonder..." launches every great discovery and invention',
+      'Inquisitive means you love to wonder and ask questions — it\'s a superpower!',
+      'Curious questions can be about ANYTHING you notice in the world',
+    ],
+    examples: [
+      { visual: '🌙', prompt: 'Galileo looked at the night sky and thought "I wonder if those dots of light are other worlds..." What do you think happened next?', answer: 'He built a telescope and discovered moons around Jupiter — changing science forever!', explanation: '"I wonder" led Galileo to make one of history\'s greatest discoveries! Every "I wonder" you feel is the beginning of something incredible!' },
+      { visual: '🕸️', prompt: 'A spider builds a web in the rain and a girl thinks "I wonder how it doesn\'t break in the wind." That is a...', answer: 'Curious question — and a great one! Scientists have studied this for years.', explanation: 'Spider silk is stronger than steel for its size! That girl\'s curious question? Scientists are still studying it. YOUR questions matter!' },
+    ],
+    practiceSteps: [
+      { visual: '🌈', prompt: 'You see a rainbow after it rains. A curious learner would think...', options: ['"I wonder how rainbows form!"', '"Whatever, I\'ve seen that before"', '"I don\'t care about that"', '"Rainbows are boring"'], answer: '"I wonder how rainbows form!"', hint: 'What does a curious person do when they notice something interesting?', explanation: 'A curious learner WONDERS! Rainbows form when sunlight bounces through raindrops — and asking "I wonder how?" is exactly how you discover that! 🌈' },
+      { visual: '✏️', prompt: 'Your teacher asks the class "Does anyone have a question?" A confident learner should...', options: ['Raise their hand if they have a question!', 'Stay quiet even if they\'re wondering something', 'Wait for someone else to ask first', 'Pretend to write something'], answer: 'Raise their hand if they have a question!', hint: 'If you have a question in your head, what\'s the brave thing to do?', explanation: 'Raise your hand! Teachers ASK if there are questions because they WANT to answer them. Your question might be the one everyone else was wondering too! 🌟' },
+      { visual: '🧪', prompt: 'Complete this sentence: Asking curious questions is a sign that you are...', options: ['Smart and thinking deeply!', 'Showing off', 'Wasting time', 'Breaking the rules'], answer: 'Smart and thinking deeply!', hint: 'When your brain notices something and wants to know more, what does that tell you about your brain?', explanation: 'Asking questions is one of the clearest signs of a SHARP, thinking mind! Every question means your brain is working, growing, and discovering! 🧠✨' },
+    ],
+    quizTopics: ['curiosity', 'asking questions', 'confidence'],
+  },
+
   // ─── SOCIAL STUDIES ───────────────────────────────────────────────────────
 
   {

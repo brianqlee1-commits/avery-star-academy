@@ -14,7 +14,7 @@ const SUBJECT_OPTIONS: { id: Subject; label: string; emoji: string; langs: Langu
   { id: 'science', label: 'Science', emoji: '🔬', langs: ['english'] },
   { id: 'social-studies', label: 'Social Studies', emoji: '🌎', langs: ['english'] },
   { id: 'tag-prep', label: 'TAG Prep', emoji: '🧠', langs: ['english'] },
-  { id: 'motivation', label: 'Mindset & Me', emoji: '💪', langs: ['english'] },
+  { id: 'motivation', label: 'Emotions', emoji: '💛', langs: ['english'] },
   { id: 'vocabulary', label: 'Vocabulary', emoji: '🔤', langs: ['english'] },
 ]
 

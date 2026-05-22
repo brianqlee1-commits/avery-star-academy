@@ -13,6 +13,7 @@ import { spanishMathQuestions } from './spanish/math'
 import { mathQuestionsExtra } from './english/mathQuestionsExtra'
 import { tagPrepQuestionsExtra } from './english/tagPrepQuestionsExtra'
 import { motivationQuestionsExtra } from './english/motivationQuestionsExtra'
+import { emotionsExtraQuestions } from './english/emotionsExtra'
 import { vocabularyQuestions } from './english/vocabulary'
 import { spanishReadingExtraQuestions } from './spanish/readingExtra'
 import { spanishMathExtraQuestions } from './spanish/mathExtra'
@@ -32,6 +33,7 @@ export const ALL_QUESTIONS: Question[] = [
   ...(tagPrepQuestionsExtra as Question[]),
   ...motivationQuestions,
   ...motivationQuestionsExtra,
+  ...emotionsExtraQuestions,
   ...vocabularyQuestions,
   ...spanishReadingQuestions,
   ...spanishReadingExtraQuestions,
@@ -77,7 +79,7 @@ export const TOPICS_BY_SUBJECT: Record<string, string[]> = {
   'english-science': ['living things', 'seasons', 'animals', 'plants', 'weather', 'life cycles', 'matter', 'solar system', 'ecosystems', 'adaptations', 'forces', 'human body'],
   'english-social-studies': ['community helpers', 'maps', 'geography', 'history', 'government', 'economics', 'civics', 'symbols'],
   'english-tag-prep': ['non-verbal patterns', 'verbal analogies', 'quantitative reasoning', 'classification', 'spatial reasoning', 'rotation', 'matrices'],
-  'english-motivation': ['growth mindset', 'confidence', 'persistence', 'goal setting', 'kindness', 'resilience'],
+  'english-motivation': ['curiosity', 'asking questions', 'emotions', 'confidence', 'growth mindset', 'persistence', 'resilience', 'kindness', 'goal setting'],
   'english-vocabulary': ['synonyms', 'antonyms', 'opposites', 'prefixes', 'suffixes', 'root words', 'context clues', 'word meanings', 'connotation', 'homophones'],
   'spanish-reading': ['colores', 'números', 'animales', 'familia', 'vocabulario', 'comprensión', 'frases'],
   'spanish-math': ['suma', 'resta', 'multiplicación', 'fracciones', 'patrones', 'geometría'],
