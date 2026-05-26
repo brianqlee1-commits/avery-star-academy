@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Question, PatternQuestion } from '../../types'
 import { clsx } from 'clsx'
@@ -6,17 +6,30 @@ import { clsx } from 'clsx'
 interface Props {
   question: Question
   onAnswer: (correct: boolean) => void
+  speak?: (text: string) => void
 }
 
-export default function QuestionCard({ question, onAnswer }: Props) {
+export default function QuestionCard({ question, onAnswer, speak }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
 
   const isPattern = question.type === 'pattern'
   const pq = isPattern ? (question as PatternQuestion) : null
-
   const correctAnswer = String(question.answer)
   const options = question.options ?? []
+
+  // Speak prompt when question mounts
+  useEffect(() => {
+    if (speak) speak(question.prompt)
+  }, [question.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Speak explanation when revealed
+  useEffect(() => {
+    if (revealed && speak && question.explanation) {
+      const timeout = setTimeout(() => speak(question.explanation!), 400)
+      return () => clearTimeout(timeout)
+    }
+  }, [revealed]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSelect(opt: string) {
     if (revealed) return
@@ -54,8 +67,15 @@ export default function QuestionCard({ question, onAnswer }: Props) {
       )}
 
       {/* Prompt */}
-      <div className="bg-white rounded-3xl p-5 mb-5 shadow-md border-2 border-purple-100">
+      <div className="bg-white rounded-3xl p-5 mb-5 shadow-md border-2 border-purple-100 relative">
         <p className="text-xl font-bold text-gray-800 text-center leading-relaxed whitespace-pre-line">{question.prompt}</p>
+        {speak && (
+          <button
+            onClick={() => speak(question.prompt)}
+            className="absolute top-3 right-3 text-purple-300 hover:text-purple-500 text-xl transition-colors"
+            title="Read aloud"
+          >🔊</button>
+        )}
       </div>
 
       {/* Options */}

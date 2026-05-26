@@ -6,12 +6,13 @@ import type { Language, Subject, GradeLevel, Lesson, PracticeStep } from '../typ
 import { getLessons } from '../data/lessons'
 import { getQuestions } from '../data/questions'
 import type { Question } from '../types'
-import { addStars, unlockReward, loadProgress, markBlockComplete } from '../store'
+import { addStars, unlockReward, loadProgress, loadSettings, markBlockComplete } from '../store'
 import { checkNewRewards } from '../data/rewards'
 import type { Reward } from '../types'
 import QuestionCard from '../components/questions/QuestionCard'
 import RewardModal from '../components/ui/RewardModal'
 import StarBar from '../components/ui/StarBar'
+import { useSpeech } from '../hooks/useSpeech'
 
 type Phase = 'demonstrate' | 'practice' | 'quiz' | 'complete'
 
@@ -43,13 +44,16 @@ export default function LessonFlow() {
   const blockId = searchParams.get('block')
   const navigate = useNavigate()
 
+  const voiceEnabled = loadSettings().voiceEnabled ?? true
+  const { speak, stop } = useSpeech()
+  const sayIt = (text: string) => { if (voiceEnabled) speak(text) }
+
   const [lesson, setLesson] = useState<Lesson | null>(null)
   const [phase, setPhase] = useState<Phase>('demonstrate')
   const [demoStep, setDemoStep] = useState(0)
   const [visibleKeyPoints, setVisibleKeyPoints] = useState(0)
   const [exampleRevealStep, setExampleRevealStep] = useState<'question' | 'answer' | 'why'>('question')
 
-  // Practice state
   const [practiceIdx, setPracticeIdx] = useState(0)
   const [attempts, setAttempts] = useState(0)
   const [showHint, setShowHint] = useState(false)
@@ -57,56 +61,121 @@ export default function LessonFlow() {
   const [practiceRevealed, setPracticeRevealed] = useState(false)
   const [practiceCorrect, setPracticeCorrect] = useState(0)
 
-  // Quiz state
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([])
   const [quizIdx, setQuizIdx] = useState(0)
   const [quizCorrect, setQuizCorrect] = useState(0)
   const [totalStarsNow, setTotalStarsNow] = useState(loadProgress().totalStars)
   const [newReward, setNewReward] = useState<Reward | null>(null)
 
+  // Load lesson
   useEffect(() => {
-    const lessons = getLessons({
-      language: lang as Language,
-      subject: subject as Subject,
-      level: level as GradeLevel,
-    })
-    if (lessons.length > 0) {
-      setLesson(lessons[0])
-    } else {
-      navigate(`/quiz/${lang}/${subject}/${level}`)
-    }
+    const lessons = getLessons({ language: lang as Language, subject: subject as Subject, level: level as GradeLevel })
+    if (lessons.length > 0) setLesson(lessons[0])
+    else navigate(`/quiz/${lang}/${subject}/${level}`)
   }, [lang, subject, level, navigate])
 
-  // Stagger key points animation
+  // Speak explanation when demonstrate step 0 loads
   useEffect(() => {
-    if (phase === 'demonstrate' && demoStep === 0 && lesson) {
+    if (lesson && phase === 'demonstrate' && demoStep === 0) {
       setVisibleKeyPoints(0)
+      setTimeout(() => sayIt(lesson.explanation), 300)
       let i = 0
       const timer = setInterval(() => {
         i++
         setVisibleKeyPoints(i)
         if (i >= lesson.keyPoints.length) clearInterval(timer)
-      }, 600)
+      }, 700)
       return () => clearInterval(timer)
     }
-  }, [phase, demoStep, lesson])
+  }, [lesson, phase, demoStep]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Speak key points as they appear
   useEffect(() => {
-    if (lesson && phase === 'quiz') {
-      const qs = getQuestions({
-        language: lang as Language,
-        subject: subject as Subject,
-        level: level as GradeLevel,
-        topic: lesson.quizTopics[0],
-        count: 6,
-      })
-      if (qs.length < 4) {
-        setQuizQuestions(getQuestions({ language: lang as Language, subject: subject as Subject, level: level as GradeLevel, count: 6 }))
-      } else {
-        setQuizQuestions(qs)
+    if (lesson && phase === 'demonstrate' && demoStep === 0 && visibleKeyPoints > 0) {
+      const kp = lesson.keyPoints[visibleKeyPoints - 1]
+      if (kp) setTimeout(() => sayIt(kp), 400)
+    }
+  }, [visibleKeyPoints]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Speak example prompt when step changes
+  useEffect(() => {
+    if (lesson && phase === 'demonstrate' && demoStep > 0) {
+      const ex = lesson.examples[demoStep - 1]
+      if (ex) setTimeout(() => sayIt(ex.prompt), 200)
+      setExampleRevealStep('question')
+    }
+  }, [demoStep]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Speak answer/why as they reveal
+  useEffect(() => {
+    if (!lesson || phase !== 'demonstrate' || demoStep === 0) return
+    const ex = lesson.examples[demoStep - 1]
+    if (!ex) return
+    if (exampleRevealStep === 'answer') setTimeout(() => sayIt(ex.answer), 200)
+    if (exampleRevealStep === 'why') setTimeout(() => sayIt(ex.explanation), 200)
+  }, [exampleRevealStep]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Speak practice question when index changes
+  useEffect(() => {
+    if (lesson && phase === 'practice') {
+      const step = lesson.practiceSteps[practiceIdx]
+      if (step) setTimeout(() => sayIt(step.prompt), 300)
+    }
+  }, [practiceIdx, phase]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Speak hint
+  useEffect(() => {
+    if (showHint && lesson) {
+      const step = lesson.practiceSteps[practiceIdx] as PracticeStep
+      if (step?.hint) setTimeout(() => sayIt('Hint: ' + step.hint), 200)
+    }
+  }, [showHint]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Speak practice explanation after reveal
+  useEffect(() => {
+    if (practiceRevealed && lesson) {
+      const step = lesson.practiceSteps[practiceIdx] as PracticeStep
+      if (step?.explanation) setTimeout(() => sayIt(step.explanation), 600)
+    }
+  }, [practiceRevealed]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load quiz questions — stay tightly on-topic
+  useEffect(() => {
+    if (!lesson || phase !== 'quiz') return
+
+    const seen = new Set<string>()
+    const topicPool: Question[] = []
+
+    // Try all quizTopics at the current level first
+    for (const topic of lesson.quizTopics) {
+      const candidates = getQuestions({ language: lang as Language, subject: subject as Subject, level: level as GradeLevel, topic, count: 12 })
+      for (const q of candidates) {
+        if (!seen.has(q.id)) { seen.add(q.id); topicPool.push(q) }
       }
     }
+
+    // If still thin, try same topics without the level filter (other levels of same topic)
+    if (topicPool.length < 5) {
+      for (const topic of lesson.quizTopics) {
+        const candidates = getQuestions({ language: lang as Language, subject: subject as Subject, topic, count: 10 })
+        for (const q of candidates) {
+          if (!seen.has(q.id)) { seen.add(q.id); topicPool.push(q) }
+        }
+      }
+    }
+
+    const shuffled = [...topicPool].sort(() => Math.random() - 0.5).slice(0, 6)
+
+    // Only fall back to general subject if truly no topic-specific questions exist
+    if (shuffled.length >= 2) {
+      setQuizQuestions(shuffled)
+    } else {
+      setQuizQuestions(getQuestions({ language: lang as Language, subject: subject as Subject, level: level as GradeLevel, count: 6 }))
+    }
   }, [lesson, phase, lang, subject, level])
+
+  // Stop speech on unmount
+  useEffect(() => () => stop(), [stop])
 
   if (!lesson) {
     return (
@@ -133,13 +202,13 @@ export default function LessonFlow() {
     if (isCorrect) {
       setPracticeRevealed(true)
       setPracticeCorrect(prev => prev + 1)
-      setTimeout(advancePractice, 1600)
+      setTimeout(advancePractice, 1800)
     } else {
       const next = attempts + 1
       setAttempts(next)
       if (next >= 2) {
         setPracticeRevealed(true)
-        setTimeout(advancePractice, 2200)
+        setTimeout(advancePractice, 2400)
       } else {
         setShowHint(true)
         setPracticeSelected(null)
@@ -148,6 +217,7 @@ export default function LessonFlow() {
   }
 
   function advancePractice() {
+    stop()
     if (practiceIdx + 1 >= lesson!.practiceSteps.length) {
       setPhase('quiz')
     } else {
@@ -166,6 +236,7 @@ export default function LessonFlow() {
       const newOnes = checkNewRewards(updated.totalStars, updated.unlockedRewards)
       if (newOnes.length > 0) { newOnes.forEach(r => unlockReward(r.id)); setNewReward(newOnes[0]) }
       if (blockId) markBlockComplete(blockId)
+      stop()
       setPhase('complete')
     } else {
       setQuizIdx(prev => prev + 1)
@@ -173,6 +244,7 @@ export default function LessonFlow() {
   }
 
   function resetLesson() {
+    stop()
     setPhase('demonstrate'); setDemoStep(0); setPracticeIdx(0); setQuizIdx(0)
     setQuizCorrect(0); setPracticeCorrect(0); setAttempts(0); setShowHint(false)
     setPracticeSelected(null); setPracticeRevealed(false); setVisibleKeyPoints(0)
@@ -186,8 +258,15 @@ export default function LessonFlow() {
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={() => navigate(blockId ? '/planner' : '/choose')} className="text-purple-600 font-bold text-lg">← Exit</button>
-          <StarBar stars={totalStarsNow} />
+          <button onClick={() => { stop(); navigate(blockId ? '/planner' : '/choose') }} className="text-purple-600 font-bold text-lg">← Exit</button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { if (voiceEnabled) stop(); else sayIt(lesson.explanation) }}
+              className="text-2xl opacity-70 hover:opacity-100 transition-opacity"
+              title={voiceEnabled ? 'Mute' : 'Read aloud'}
+            >{voiceEnabled ? '🔊' : '🔇'}</button>
+            <StarBar stars={totalStarsNow} />
+          </div>
         </div>
 
         {/* Phase progress bar */}
@@ -214,11 +293,7 @@ export default function LessonFlow() {
           className={`bg-gradient-to-r ${gradientClass} rounded-3xl p-4 mb-5 shadow-xl text-white flex items-center gap-4`}
           initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}
         >
-          <motion.div
-            className="text-5xl"
-            animate={{ y: [0, -6, 0], rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
+          <motion.div className="text-5xl" animate={{ y: [0, -6, 0], rotate: [0, 5, -5, 0] }} transition={{ duration: 3, repeat: Infinity }}>
             {lesson.visual}
           </motion.div>
           <div className="flex-1 min-w-0">
@@ -226,6 +301,7 @@ export default function LessonFlow() {
             <h2 className="text-xl font-black leading-tight">{lesson.title}</h2>
             <p className="text-white/80 text-xs font-bold mt-0.5 truncate">{lesson.tagline}</p>
           </div>
+          <button onClick={() => sayIt(lesson.explanation)} className="text-white/60 hover:text-white text-xl flex-shrink-0 transition-colors" title="Read lesson aloud">🔊</button>
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -236,16 +312,17 @@ export default function LessonFlow() {
 
               {demoStep === 0 && (
                 <div className="space-y-4">
-                  {/* Explanation */}
                   <div className="bg-white rounded-3xl p-5 shadow-lg border-2 border-purple-100">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">💡</span>
-                      <span className="font-black text-purple-700 text-sm uppercase tracking-wide">Here's the big idea</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">💡</span>
+                        <span className="font-black text-purple-700 text-sm uppercase tracking-wide">Here's the big idea</span>
+                      </div>
+                      <button onClick={() => sayIt(lesson.explanation)} className="text-purple-300 hover:text-purple-500 text-lg transition-colors">🔊</button>
                     </div>
                     <p className="text-gray-800 font-bold text-lg leading-relaxed">{lesson.explanation}</p>
                   </div>
 
-                  {/* Key points — stagger in */}
                   <div className={`rounded-2xl p-4 border-2 ${bgClass}`}>
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-xl">🔑</span>
@@ -261,14 +338,9 @@ export default function LessonFlow() {
                               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                               className="flex items-start gap-3 bg-white rounded-xl p-3 shadow-sm border border-gray-100"
                             >
-                              <motion.span
-                                className="text-xl mt-0.5 flex-shrink-0"
-                                animate={{ rotate: [0, 15, -10, 0] }}
-                                transition={{ delay: 0.3, duration: 0.5 }}
-                              >
-                                ⭐
-                              </motion.span>
-                              <span className="font-bold text-gray-800 text-base leading-snug">{kp}</span>
+                              <motion.span className="text-xl mt-0.5 flex-shrink-0" animate={{ rotate: [0, 15, -10, 0] }} transition={{ delay: 0.3, duration: 0.5 }}>⭐</motion.span>
+                              <span className="font-bold text-gray-800 text-base leading-snug flex-1">{kp}</span>
+                              <button onClick={() => sayIt(kp)} className="text-gray-300 hover:text-gray-500 text-sm flex-shrink-0">🔊</button>
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -278,7 +350,7 @@ export default function LessonFlow() {
 
                   <motion.button
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => { setDemoStep(1); setExampleRevealStep('question') }}
+                    onClick={() => { stop(); setDemoStep(1) }}
                     className={`w-full bg-gradient-to-r ${gradientClass} text-white font-black py-4 rounded-2xl shadow-xl text-xl border-b-4 border-black/20`}
                     animate={visibleKeyPoints >= lesson.keyPoints.length ? { scale: [1, 1.03, 1] } : {}}
                     transition={{ duration: 1, repeat: Infinity }}
@@ -290,30 +362,21 @@ export default function LessonFlow() {
 
               {demoStep > 0 && demoStep <= lesson.examples.length && (
                 <div className="space-y-4">
-                  {/* Example counter pills */}
                   <div className="flex justify-center gap-2">
                     {lesson.examples.map((_, i) => (
                       <div key={i} className={clsx('h-2 rounded-full transition-all duration-300', i < demoStep - 1 ? 'w-8 bg-green-400' : i === demoStep - 1 ? 'w-12 bg-purple-500' : 'w-8 bg-gray-200')} />
                     ))}
                   </div>
 
-                  {/* Question card */}
-                  <motion.div
-                    key={`ex-${demoStep}`}
-                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white rounded-3xl p-5 shadow-xl border-2 border-purple-100"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
+                  <motion.div key={`ex-${demoStep}`} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl p-5 shadow-xl border-2 border-purple-100">
+                    <div className="flex items-center justify-between mb-3">
                       <span className={`text-xs font-black px-3 py-1 rounded-full text-white bg-gradient-to-r ${gradientClass}`}>
                         Example {demoStep} of {lesson.examples.length}
                       </span>
+                      <button onClick={() => sayIt(currentExample.prompt)} className="text-purple-300 hover:text-purple-500 text-lg transition-colors">🔊</button>
                     </div>
                     {currentExample.visual && (
-                      <motion.div
-                        className="text-6xl text-center mb-4"
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
+                      <motion.div className="text-6xl text-center mb-4" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
                         {currentExample.visual}
                       </motion.div>
                     )}
@@ -324,11 +387,11 @@ export default function LessonFlow() {
 
                     <AnimatePresence>
                       {exampleRevealStep !== 'question' && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                          className="bg-green-50 rounded-2xl p-4 border-2 border-green-300 mb-3"
-                        >
-                          <p className="text-xs font-black text-green-600 uppercase tracking-wide mb-1">✅ Answer</p>
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-green-50 rounded-2xl p-4 border-2 border-green-300 mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs font-black text-green-600 uppercase tracking-wide">✅ Answer</p>
+                            <button onClick={() => sayIt(currentExample.answer)} className="text-green-400 hover:text-green-600 text-sm">🔊</button>
+                          </div>
                           <p className="font-black text-gray-800 text-lg">{currentExample.answer}</p>
                         </motion.div>
                       )}
@@ -336,32 +399,26 @@ export default function LessonFlow() {
 
                     <AnimatePresence>
                       {exampleRevealStep === 'why' && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                          className="bg-yellow-50 rounded-2xl p-4 border-2 border-yellow-300"
-                        >
-                          <p className="text-xs font-black text-yellow-600 uppercase tracking-wide mb-1">💡 Why?</p>
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-yellow-50 rounded-2xl p-4 border-2 border-yellow-300">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs font-black text-yellow-600 uppercase tracking-wide">💡 Why?</p>
+                            <button onClick={() => sayIt(currentExample.explanation)} className="text-yellow-400 hover:text-yellow-600 text-sm">🔊</button>
+                          </div>
                           <p className="text-gray-700 font-bold text-base leading-snug">{currentExample.explanation}</p>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </motion.div>
 
-                  {/* Step-by-step reveal button */}
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={() => {
-                      if (exampleRevealStep === 'question') {
-                        setExampleRevealStep('answer')
-                      } else if (exampleRevealStep === 'answer') {
-                        setExampleRevealStep('why')
-                      } else {
-                        if (demoStep < lesson.examples.length) {
-                          setDemoStep(prev => prev + 1)
-                          setExampleRevealStep('question')
-                        } else {
-                          setPhase('practice')
-                        }
+                      if (exampleRevealStep === 'question') setExampleRevealStep('answer')
+                      else if (exampleRevealStep === 'answer') setExampleRevealStep('why')
+                      else {
+                        stop()
+                        if (demoStep < lesson.examples.length) setDemoStep(prev => prev + 1)
+                        else setPhase('practice')
                       }
                     }}
                     className={`w-full bg-gradient-to-r ${gradientClass} text-white font-black py-4 rounded-2xl shadow-xl text-xl border-b-4 border-black/20`}
@@ -380,58 +437,40 @@ export default function LessonFlow() {
           {phase === 'practice' && (
             <motion.div key={`practice-${practiceIdx}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
 
-              {/* Professor Hoot banner */}
               <motion.div
                 className="flex items-center gap-3 bg-indigo-50 rounded-2xl p-3 border-2 border-indigo-200 mb-4"
                 animate={{ x: [0, 3, -3, 0] }} transition={{ delay: 0.5, duration: 0.4 }}
               >
-                <motion.span
-                  className="text-3xl"
-                  animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 2, repeat: Infinity }}
-                >{CPU_AVATAR}</motion.span>
-                <p className="font-bold text-indigo-700 text-sm">
-                  I'm here to help! <strong>2 tries</strong> per question. Ask for a hint anytime! 🌟
-                </p>
+                <motion.span className="text-3xl" animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 2, repeat: Infinity }}>{CPU_AVATAR}</motion.span>
+                <p className="font-bold text-indigo-700 text-sm flex-1">I'm here to help! <strong>2 tries</strong> per question. Ask for a hint anytime! 🌟</p>
               </motion.div>
 
-              {/* Progress dots */}
               <div className="flex justify-center gap-3 mb-4">
                 {lesson.practiceSteps.map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className={clsx('rounded-full transition-all duration-300', i < practiceIdx ? 'w-4 h-4 bg-green-400' : i === practiceIdx ? 'w-5 h-5 bg-purple-500 shadow-lg' : 'w-4 h-4 bg-gray-200')}
-                    animate={i === practiceIdx ? { scale: [1, 1.2, 1] } : {}}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  />
+                  <motion.div key={i} className={clsx('rounded-full transition-all duration-300', i < practiceIdx ? 'w-4 h-4 bg-green-400' : i === practiceIdx ? 'w-5 h-5 bg-purple-500 shadow-lg' : 'w-4 h-4 bg-gray-200')} animate={i === practiceIdx ? { scale: [1, 1.2, 1] } : {}} transition={{ duration: 1.5, repeat: Infinity }} />
                 ))}
               </div>
 
-              {/* Question card */}
               <div className="bg-white rounded-3xl p-5 shadow-xl border-2 border-purple-100 mb-4">
-                {step.visual && (
-                  <motion.div
-                    className="text-5xl text-center mb-3"
-                    animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2, repeat: Infinity }}
-                  >{step.visual}</motion.div>
-                )}
-                <p className="text-xl font-bold text-gray-800 text-center leading-snug">{step.prompt}</p>
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
+                    {step.visual && <motion.div className="text-5xl text-center mb-3" animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2, repeat: Infinity }}>{step.visual}</motion.div>}
+                    <p className="text-xl font-bold text-gray-800 text-center leading-snug">{step.prompt}</p>
+                  </div>
+                  <button onClick={() => sayIt(step.prompt)} className="text-purple-300 hover:text-purple-500 text-lg flex-shrink-0 mt-1 transition-colors">🔊</button>
+                </div>
               </div>
 
-              {/* Hint */}
               <AnimatePresence>
                 {showHint && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, height: 0 }}
-                    animate={{ opacity: 1, scale: 1, height: 'auto' }}
-                    className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-3 mb-3 text-center"
-                  >
+                  <motion.div initial={{ opacity: 0, scale: 0.9, height: 0 }} animate={{ opacity: 1, scale: 1, height: 'auto' }} className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-3 mb-3 text-center">
                     <span className="font-black text-yellow-700">{CPU_AVATAR} Hint: </span>
                     <span className="font-bold text-yellow-800">{step.hint}</span>
+                    <button onClick={() => sayIt('Hint: ' + step.hint)} className="ml-2 text-yellow-500 hover:text-yellow-700 text-sm">🔊</button>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Options */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 {step.options.map(opt => {
                   const isCorrect = opt === step.answer
@@ -459,26 +498,17 @@ export default function LessonFlow() {
                 })}
               </div>
 
-              {/* Hint button */}
               {!practiceRevealed && !showHint && (
-                <button
-                  onClick={() => setShowHint(true)}
-                  className="w-full text-indigo-600 font-bold py-2 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-sm"
-                >
+                <button onClick={() => setShowHint(true)} className="w-full text-indigo-600 font-bold py-2 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-sm">
                   {CPU_AVATAR} Show Hint
                 </button>
               )}
 
-              {/* Explanation after reveal */}
               <AnimatePresence>
                 {practiceRevealed && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className={clsx(
-                      'rounded-2xl p-4 text-center font-bold text-base border-2 mt-2',
-                      practiceSelected === step.answer ? 'bg-green-50 border-green-300 text-green-800' : 'bg-orange-50 border-orange-300 text-orange-800'
-                    )}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className={clsx('rounded-2xl p-4 text-center font-bold text-base border-2 mt-2', practiceSelected === step.answer ? 'bg-green-50 border-green-300 text-green-800' : 'bg-orange-50 border-orange-300 text-orange-800')}
                   >
                     {practiceSelected === step.answer ? '🌟 ' : `${CPU_AVATAR} `}
                     {step.explanation}
@@ -491,10 +521,7 @@ export default function LessonFlow() {
           {/* ── QUIZ phase ── */}
           {phase === 'quiz' && quizQuestions.length > 0 && (
             <motion.div key="quiz" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <motion.div
-                className={`bg-gradient-to-r ${gradientClass} rounded-2xl p-3 mb-4 text-center text-white`}
-                initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-              >
+              <motion.div className={`bg-gradient-to-r ${gradientClass} rounded-2xl p-3 mb-4 text-center text-white`} initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
                 <p className="font-black text-lg">🚀 Now try it on your OWN!</p>
                 <p className="text-white/80 text-sm font-bold">No hints this time — you've got this!</p>
               </motion.div>
@@ -502,13 +529,15 @@ export default function LessonFlow() {
                 <span>Question {quizIdx + 1} of {quizQuestions.length}</span>
               </div>
               <div className="h-2.5 bg-purple-100 rounded-full mb-4 overflow-hidden">
-                <motion.div
-                  className={`h-full bg-gradient-to-r ${gradientClass} rounded-full`}
-                  animate={{ width: `${(quizIdx / quizQuestions.length) * 100}%` }}
-                />
+                <motion.div className={`h-full bg-gradient-to-r ${gradientClass} rounded-full`} animate={{ width: `${(quizIdx / quizQuestions.length) * 100}%` }} />
               </div>
               <AnimatePresence mode="wait">
-                <QuestionCard key={quizQuestions[quizIdx]?.id} question={quizQuestions[quizIdx]} onAnswer={handleQuizAnswer} />
+                <QuestionCard
+                  key={quizQuestions[quizIdx]?.id}
+                  question={quizQuestions[quizIdx]}
+                  onAnswer={handleQuizAnswer}
+                  speak={voiceEnabled ? sayIt : undefined}
+                />
               </AnimatePresence>
             </motion.div>
           )}
@@ -516,17 +545,12 @@ export default function LessonFlow() {
           {/* ── COMPLETE phase ── */}
           {phase === 'complete' && (
             <motion.div key="complete" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-              <motion.div
-                className="text-8xl mb-3"
-                animate={{ rotate: [0, -10, 10, -5, 0], scale: [1, 1.3, 1] }}
-                transition={{ duration: 1.2 }}
-              >
+              <motion.div className="text-8xl mb-3" animate={{ rotate: [0, -10, 10, -5, 0], scale: [1, 1.3, 1] }} transition={{ duration: 1.2 }}>
                 {quizCorrect === quizQuestions.length ? '🌟' : quizCorrect >= quizQuestions.length / 2 ? '⭐' : '💪'}
               </motion.div>
               <h2 className="text-3xl font-black text-purple-700 mb-1">Lesson Complete!</h2>
               <p className="text-purple-400 font-bold mb-5">{lesson.title}</p>
 
-              {/* Score card */}
               <div className="bg-white rounded-3xl p-6 shadow-xl border-2 border-purple-100 mb-5">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className={`rounded-2xl p-4 border-2 ${bgClass} text-center`}>
@@ -539,23 +563,15 @@ export default function LessonFlow() {
                   </div>
                 </div>
                 <p className="font-bold text-gray-700 text-lg">
-                  {quizCorrect === quizQuestions.length
-                    ? '🏆 PERFECT! You mastered it!'
-                    : quizCorrect >= quizQuestions.length * 0.7
-                    ? '🌟 Great work! You\'re getting it!'
-                    : '💪 Good try! Practice makes perfect!'}
+                  {quizCorrect === quizQuestions.length ? '🏆 PERFECT! You mastered it!' : quizCorrect >= quizQuestions.length * 0.7 ? '🌟 Great work! You\'re getting it!' : '💪 Good try! Practice makes perfect!'}
                 </p>
               </div>
 
               <div className="flex gap-3 mb-3">
-                <button
-                  onClick={resetLesson}
-                  className="flex-1 bg-gradient-to-r from-blue-400 to-indigo-500 text-white font-black py-4 rounded-2xl shadow-lg text-lg"
-                >🔄 Try Again</button>
-                <button
-                  onClick={() => navigate(blockId ? '/planner' : '/choose')}
-                  className={`flex-1 bg-gradient-to-r ${gradientClass} text-white font-black py-4 rounded-2xl shadow-lg text-lg`}
-                >{blockId ? '📅 Back to Plan' : '🎯 New Lesson'}</button>
+                <button onClick={resetLesson} className="flex-1 bg-gradient-to-r from-blue-400 to-indigo-500 text-white font-black py-4 rounded-2xl shadow-lg text-lg">🔄 Try Again</button>
+                <button onClick={() => navigate(blockId ? '/planner' : '/choose')} className={`flex-1 bg-gradient-to-r ${gradientClass} text-white font-black py-4 rounded-2xl shadow-lg text-lg`}>
+                  {blockId ? '📅 Back to Plan' : '🎯 New Lesson'}
+                </button>
               </div>
               <button onClick={() => navigate('/')} className="w-full text-purple-500 font-bold py-2">🏠 Go Home</button>
             </motion.div>

@@ -21,6 +21,7 @@ const defaultSettings: Settings = {
     language: 'english',
   },
   soundEnabled: true,
+  voiceEnabled: true,
   playerName: 'Avery',
   favoriteCharacter: '',
 }

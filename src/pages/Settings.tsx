@@ -28,6 +28,7 @@ export default function Settings() {
   const [focus, setFocus] = useState(settings.dailyFocus)
   const [customTopic, setCustomTopic] = useState(settings.dailyFocus.customTopic)
   const [playerName, setPlayerName] = useState(settings.playerName)
+  const [voiceEnabled, setVoiceEnabled] = useState(settings.voiceEnabled ?? true)
   const [saved, setSaved] = useState(false)
   const [newPin, setNewPin] = useState('')
 
@@ -46,6 +47,7 @@ export default function Settings() {
   function save() {
     const s = loadSettings()
     s.playerName = playerName
+    s.voiceEnabled = voiceEnabled
     if (newPin.length === 4 && /^\d+$/.test(newPin)) s.parentPin = newPin
     saveSettings(s)
     updateDailyFocus({ ...focus, customTopic })
@@ -177,6 +179,22 @@ export default function Settings() {
               )}
             </>
           )}
+        </Section>
+
+        {/* Read Aloud Voice */}
+        <Section title="Read Aloud Voice" emoji="🔊">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div
+              className={clsx('w-12 h-6 rounded-full transition-all relative cursor-pointer', voiceEnabled ? 'bg-purple-500' : 'bg-gray-300')}
+              onClick={() => setVoiceEnabled(v => !v)}
+            >
+              <div className={clsx('absolute top-0 w-6 h-6 bg-white rounded-full shadow transition-all', voiceEnabled ? 'translate-x-6' : 'translate-x-0')} />
+            </div>
+            <div>
+              <span className="font-bold text-gray-700">{voiceEnabled ? '🔊 Voice reading ON' : '🔇 Voice reading OFF'}</span>
+              <p className="text-xs text-gray-500 mt-0.5">Lady voice reads questions, examples &amp; explanations aloud</p>
+            </div>
+          </label>
         </Section>
 
         {/* Change PIN */}

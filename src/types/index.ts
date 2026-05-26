@@ -106,6 +106,7 @@ export interface Settings {
   parentPin: string
   dailyFocus: DailyFocus
   soundEnabled: boolean
+  voiceEnabled: boolean
   playerName: string
   favoriteCharacter: string
 }
